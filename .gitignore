@@ -1,0 +1,10 @@
+__pycache__/
+.mypy_cache/
+*.egg-info/
+/build/
+/.venv/
+/dist/
+/download/
+/gruut/
+*.onnx
+.dockerignore
