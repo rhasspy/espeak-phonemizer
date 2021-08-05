@@ -30,7 +30,6 @@ setuptools.setup(
     url="https://github.com/synesthesiam/espeak-phonemizer",
     packages=setuptools.find_packages(),
     package_data={"espeak_phonemizer": ["VERSION", "py.typed"]},
-    install_requires=requirements,
     entry_points={
         "console_scripts": [
             "espeak-phonemizer = espeak_phonemizer.__main__:main",

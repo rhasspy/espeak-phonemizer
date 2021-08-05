@@ -1,8 +1,11 @@
 import argparse
 import csv
+import itertools
 import logging
 import os
 import sys
+import typing
+from collections import Counter
 
 _LOGGER = logging.getLogger("phoneme_ids")
 
@@ -62,9 +65,25 @@ def main():
         action="store_true",
         help="Pull primary/secondary stress out as separate phonemes",
     )
+    parser.add_argument(
+        "--write-phoneme-counts", help="Path to write phoneme counts observed in input"
+    )
+    parser.add_argument(
+        "-m",
+        "--map",
+        nargs=2,
+        action="append",
+        help="Map from observed phoneme to desired phonemes",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
+
+    # Map from observed phonemes to desired
+    phoneme_map = {}
+    if args.map:
+        for from_phoneme, to_phoneme in args.map:
+            phoneme_map[from_phoneme] = to_phoneme
 
     phoneme_to_id = {}
 
@@ -124,6 +143,7 @@ def main():
 
     # Read all input and get set of phonemes
     all_phonemes = set(phoneme_to_id.keys())
+    all_phoneme_counts = Counter()
 
     if args.simple_punctuation:
         # Add , and .
@@ -163,7 +183,10 @@ def main():
                     if args.simple_punctuation:
                         phoneme = _PUNCTUATION_MAP.get(phoneme, phoneme)
 
+                    phoneme = phoneme_map.get(phoneme, phoneme)
+
                     all_phonemes.add(phoneme)
+                    all_phoneme_counts[phoneme] += 1
 
     # Assign phonemes to ids in sorted order
     for phoneme in sorted(all_phonemes):
@@ -191,7 +214,7 @@ def main():
                 if args.separate_stress:
                     # Split stress out
                     while phoneme and (phoneme[0] in _STRESS):
-                        stress = phoneme[0]
+                        stress = phoneme_map.get(phoneme[0], phoneme[0])
                         word_ids.append(phoneme_to_id[stress])
                         phoneme = phoneme[1:]
 
@@ -199,6 +222,7 @@ def main():
                     if args.simple_punctuation:
                         phoneme = _PUNCTUATION_MAP.get(phoneme, phoneme)
 
+                    phoneme = phoneme_map.get(phoneme, phoneme)
                     word_ids.append(phoneme_to_id[phoneme])
 
             if word_ids:
@@ -236,6 +260,72 @@ def main():
                 phoneme_to_id.items(), key=lambda kv: kv[1]
             ):
                 print(phoneme_id, phoneme, file=phonemes_file)
+
+    if args.write_phoneme_counts:
+        # Write file with PHONEME<space>COUNT format
+        with open(args.write_phoneme_counts, "w") as phoneme_counts_file:
+            for phoneme, phoneme_count in all_phoneme_counts.most_common():
+                print(phoneme, phoneme_count, file=phoneme_counts_file)
+
+
+# -----------------------------------------------------------------------------
+
+
+def phonemes_to_ids(
+    word_phonemes: typing.List[typing.List[str]],
+    phoneme_to_id: typing.Mapping[str, int],
+    pad: typing.Optional[str] = None,
+    bos: typing.Optional[str] = None,
+    eos: typing.Optional[str] = None,
+    blank: typing.Optional[str] = None,
+    simple_punctuation: bool = False,
+    separate_stress: bool = False,
+    phoneme_map: typing.Optional[typing.Mapping[str, str]] = None,
+) -> typing.List[int]:
+    if phoneme_map is None:
+        phoneme_map = {}
+
+    blank_id: typing.Optional[int] = None
+    if blank:
+        blank_id = phoneme_to_id[blank]
+
+    # Transform into phoneme ids
+    word_phoneme_ids = []
+
+    # Add beginning-of-sentence symbol
+    if bos:
+        word_phoneme_ids.append([phoneme_to_id[bos]])
+
+    if blank_id is not None:
+        word_phoneme_ids.append([blank_id])
+
+    for word in word_phonemes:
+        word_ids = []
+        for phoneme in word:
+            if separate_stress:
+                # Split stress out
+                while phoneme and (phoneme[0] in _STRESS):
+                    stress = phoneme_map.get(phoneme[0], phoneme[0])
+                    word_ids.append(phoneme_to_id[stress])
+                    phoneme = phoneme[1:]
+
+            if phoneme:
+                if simple_punctuation:
+                    phoneme = _PUNCTUATION_MAP.get(phoneme, phoneme)
+
+                phoneme = phoneme_map.get(phoneme, phoneme)
+                word_ids.append(phoneme_to_id[phoneme])
+
+        if word_ids:
+            word_phoneme_ids.append(word_ids)
+            if blank_id is not None:
+                word_phoneme_ids.append([blank_id])
+
+    # Add end-of-sentence symbol
+    if eos:
+        word_phoneme_ids.append([phoneme_to_id[eos]])
+
+    return list(itertools.chain.from_iterable(word_phoneme_ids))
 
 
 # -----------------------------------------------------------------------------

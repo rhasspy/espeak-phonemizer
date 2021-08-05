@@ -15,7 +15,7 @@ class Phonemizer:
     espeakCHARS_AUTO = 0
     espeakPHONEMES = 0x100
 
-    LANG_SWITCH_FLAG = re.compile(r"\([^)]+\)")
+    LANG_SWITCH_FLAG = re.compile(r"\([^)]*\)")
 
     DEFAULT_CLAUSE_BREAKERS = {",", ";", ":", ".", "!", "?"}
 
