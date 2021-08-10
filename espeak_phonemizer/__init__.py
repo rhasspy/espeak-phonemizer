@@ -60,7 +60,7 @@ class Phonemizer:
             missing_breakers = [c for c in text if c in self.clause_breakers]
 
         # Create in-memory file for phoneme trace.
-        # espeak_TextToPhonemes segfaults no matter what I do, so this is the back.
+        # espeak_TextToPhonemes segfaults no matter what I do, so this is the back-up.
         phonemes_buffer = ctypes.c_char_p()
         phonemes_size = ctypes.c_size_t()
         phonemes_file = self.libc.open_memstream(

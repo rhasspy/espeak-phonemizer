@@ -1,5 +1,6 @@
 import argparse
 import csv
+import os
 import sys
 
 from . import Phonemizer
@@ -63,6 +64,9 @@ def main():
     else:
         csv_writer = None
         reader = sys.stdin
+
+    if os.isatty(sys.stdin.fileno()):
+        print("Reading text from stdin...", file=sys.stderr)
 
     for line in reader:
         if args.csv:
