@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+
+if [[ -z "$2" ]]; then
+    echo 'Usage: larynx-ids VOICE PHONEME_IDS [PHONEME_MAP] [PHONEME_COUNTS] < CSV > CSV'
+    exit 1
+fi
+
+voice="$1"
+phoneme_ids="$2"
+phoneme_map="$3"
+phoneme_counts="$4"
+
+# Directory of *this* script
+this_dir="$( cd "$( dirname "$0" )" && pwd )"
+src_dir="$(realpath "${this_dir}/..")"
+
+venv="${src_dir}/.venv"
+if [[ -d "${venv}" ]]; then
+    source "${venv}/bin/activate"
+fi
+
+export PYTHONPATH="${src_dir}:${PYTHONPATH}"
+
+phoneme_sep='_'
+word_sep='#'
+
+phonemizer_args=()
+phonemizer_args=()
+phonemizer_args+=('--voice' "${voice}")
+phonemizer_args+=('--csv')
+phonemizer_args+=('-p' "${phoneme_sep}")
+phonemizer_args+=('-w' "${word_sep}")
+phonemizer_args+=('--keep-punctuation')
+
+# while [[ -n "$1" ]]; do
+#     arg="$1"
+#     shift 1
+
+#     if [[ "${arg}" == '--' ]]; then
+#         break
+#     fi
+
+#     phonemizer_args+=("${arg}")
+# done
+
+id_args=()
+id_args+=('--csv')
+id_args+=('-p' "${phoneme_sep}")
+id_args+=('-w' "${word_sep}")
+id_args+=('--simple-punctuation')
+id_args+=('--separate-stress')
+id_args+=('--blank' '#')
+id_args+=('--blank-between' 'words')
+id_args+=('--bos' '^')
+id_args+=('--eos' '$')
+id_args+=('--pad' '_')
+
+if [[ -s "${phoneme_ids}" ]]; then
+    echo "Reading phonemes from ${phoneme_ids}" >&2
+    id_args+=('--read-phonemes' "${phoneme_ids}")
+else
+    id_args+=('--write-phonemes' "${phoneme_ids}")
+fi
+
+if [[ -f "${phoneme_map}" ]]; then
+    id_args+=('--phoneme-map' "${phoneme_map}")
+fi
+
+if [[ -n "${phoneme_counts}" ]]; then
+    id_args+=('--write-phoneme-counts' "${phoneme_counts}")
+fi
+
+# id_args+=("$@")
+
+python3 -m espeak_phonemizer "${phonemizer_args[@]}" | \
+    tee /dev/stderr | \
+    python3 -m phonemes2ids "${id_args[@]}" | \
+    csvcut -d'|' -c 1,4 | \
+    csvformat -D'|'
