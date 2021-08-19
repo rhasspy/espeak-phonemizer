@@ -132,7 +132,12 @@ class Phonemizer:
         self.libc = ctypes.cdll.LoadLibrary("libc.so.6")
         self.libc.open_memstream.restype = ctypes.POINTER(ctypes.c_char)
 
-        self.lib_espeak = ctypes.cdll.LoadLibrary("libespeak-ng.so")
+        try:
+            self.lib_espeak = ctypes.cdll.LoadLibrary("libespeak-ng.so")
+        except OSError:
+            # Try .so.1
+            self.lib_espeak = ctypes.cdll.LoadLibrary("libespeak-ng.so.1")
+
         sample_rate = self.lib_espeak.espeak_Initialize(
             Phonemizer.AUDIO_OUTPUT_SYNCHRONOUS, 0, None, 0
         )
