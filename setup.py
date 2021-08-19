@@ -22,7 +22,7 @@ with open(version_path, "r") as version_file:
 # -----------------------------------------------------------------------------
 
 setuptools.setup(
-    name="espeak_phonemize",
+    name="espeak_phonemizer",
     version=version,
     description="Lightweight International Phonetic Alphabet (IPA) phonemizer that uses libespeak-ng",
     author="Michael Hansen",
