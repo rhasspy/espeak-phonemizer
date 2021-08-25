@@ -1,10 +1,23 @@
+"""Uses ctypes and libespeak-ng to get IPA phonemes from text"""
 import ctypes
 import re
 import typing
+from pathlib import Path
+
+_DIR = Path(__file__).parent
+__version__ = (_DIR / "VERSION").read_text().strip()
+
+# -----------------------------------------------------------------------------
 
 
 class Phonemizer:
-    """Use ctypes and libespeak-ng to get IPA phonemes from text"""
+    """
+    Use ctypes and libespeak-ng to get IPA phonemes from text.
+    Not thread safe.
+
+    Requires libc.so.6
+    Tries to use libespeak-ng.so or libespeak-ng.so.1
+    """
 
     SEEK_SET = 0
 
@@ -44,7 +57,23 @@ class Phonemizer:
         keep_language_flags: bool = False,
         no_stress: bool = False,
     ) -> str:
-        """Return IPA string for text"""
+        """
+        Return IPA string for text.
+        Not thread safe.
+
+        Args:
+            text: Text to phonemize
+            voice: optional voice (uses self.default_voice if None)
+            keep_clause_breakers: True if punctuation symbols should be kept
+            phoneme_separator: Separator character between phonemes
+            word_separator: Separator string between words (default: space)
+            punctuation_separator: Separator string between before punctuation (keep_clause_breakers=True)
+            keep_language_flags: True if language switching flags should be kept
+            no_stress: True if stress characters should be removed
+
+        Returns:
+            ipa - string of IPA phonemes
+        """
         self._maybe_init()
 
         voice = voice or self.default_voice
@@ -97,13 +126,20 @@ class Phonemizer:
                     Phonemizer.LANG_SWITCH_FLAG.sub("", line) for line in phoneme_lines
                 ]
 
+            if word_separator != " ":
+                # Split/re-join words
+                for line_idx in range(len(phoneme_lines)):
+                    phoneme_lines[line_idx] = word_separator.join(
+                        phoneme_lines[line_idx].split()
+                    )
+
             # Re-insert clause breakers
             if missing_breakers:
                 # pylint: disable=consider-using-enumerate
                 for line_idx in range(len(phoneme_lines)):
                     if line_idx < len(missing_breakers):
                         phoneme_lines[line_idx] += (
-                            word_separator + missing_breakers[line_idx]
+                            punctuation_separator + missing_breakers[line_idx]
                         )
 
             phonemes_str = word_separator.join(line.strip() for line in phoneme_lines)

@@ -1,14 +1,20 @@
+"""Command-line interface to espeak_phonemizer"""
 import argparse
 import csv
+import logging
 import os
 import sys
 
 from . import Phonemizer
 
+_LOGGER = logging.getLogger("espeak_phonemizer")
+
+# -----------------------------------------------------------------------------
+
 
 def main():
     parser = argparse.ArgumentParser(prog="espeak_phonemizer")
-    parser.add_argument("-v", "--voice", required=True, help="eSpeak voice to use")
+    parser.add_argument("-v", "--voice", help="eSpeak voice to use")
     parser.add_argument(
         "-p", "--phoneme-separator", help="Separator character between phonemes"
     )
@@ -48,7 +54,29 @@ def main():
     parser.add_argument(
         "--csv-delimiter", default="|", help="Delimiter in CSV input and output"
     )
+    parser.add_argument("--version", action="store_true", help="Print version and exit")
+    parser.add_argument(
+        "--debug", action="store_true", help="Print DEBUG messages to the console"
+    )
     args = parser.parse_args()
+
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+    # -------------------------------------------------------------------------
+
+    if args.version:
+        # Print version and exit
+        from . import __version__
+
+        print(__version__)
+        sys.exit(0)
+
+    # -------------------------------------------------------------------------
+
+    assert args.voice, "Missing -v/--voice"
 
     if args.word_separator:
         assert (
@@ -82,7 +110,7 @@ def main():
             phoneme_separator=args.phoneme_separator,
             keep_language_flags=args.keep_language_flags,
             no_stress=args.no_stress,
-            punctuation_separator=args.phoneme_separator,
+            punctuation_separator=args.phoneme_separator or "",
         )
 
         if args.word_separator:
