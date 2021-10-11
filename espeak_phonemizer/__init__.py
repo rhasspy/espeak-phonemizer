@@ -103,18 +103,16 @@ class Phonemizer:
 
             self.lib_espeak.espeak_SetPhonemeTrace(phoneme_flags, phonemes_file)
 
-            identifier = ctypes.c_uint()
-            user_data = ctypes.c_void_p()
             text_bytes = text.encode("utf-8")
             self.lib_espeak.espeak_Synth(
                 text_bytes,
-                0,  # buflength
+                0,  # buflength (unused in AUDIO_OUTPUT_SYNCHRONOUS mode)
                 0,  # position
                 0,  # position_type
-                0,  # end_position
+                0,  # end_position (no end position)
                 Phonemizer.espeakCHARS_AUTO | Phonemizer.espeakPHONEMES,
-                identifier,
-                user_data,
+                None,  # unique_speaker,
+                None,  # user_data,
             )
             self.libc.fflush(phonemes_file)
 
@@ -162,7 +160,7 @@ class Phonemizer:
 
     def _maybe_init(self):
         if self.libc and self.lib_espeak:
-            # Already initialize
+            # Already initialized
             return
 
         self.libc = ctypes.cdll.LoadLibrary("libc.so.6")

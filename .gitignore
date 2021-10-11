@@ -8,3 +8,5 @@ __pycache__/
 /gruut/
 *.onnx
 .dockerignore
+.coverage
+coverage.xml
