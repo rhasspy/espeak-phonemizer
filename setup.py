@@ -27,7 +27,7 @@ setuptools.setup(
     description="Lightweight International Phonetic Alphabet (IPA) phonemizer that uses libespeak-ng",
     author="Michael Hansen",
     author_email="mike@rhasspy.org",
-    url="https://github.com/synesthesiam/espeak-phonemizer",
+    url="https://github.com/rhasspy/espeak-phonemizer",
     packages=setuptools.find_packages(),
     package_data={"espeak_phonemizer": ["VERSION", "py.typed"]},
     entry_points={
