@@ -26,6 +26,7 @@ class Phonemizer:
     AUDIO_OUTPUT_SYNCHRONOUS = 0x02
     espeakPHONEMES_IPA = 0x02
     espeakCHARS_AUTO = 0
+    espeakSSML = 0x10
     espeakPHONEMES = 0x100
 
     LANG_SWITCH_FLAG = re.compile(r"\([^)]*\)")
@@ -56,6 +57,7 @@ class Phonemizer:
         punctuation_separator: str = "",
         keep_language_flags: bool = False,
         no_stress: bool = False,
+        ssml: bool = False,
     ) -> str:
         """
         Return IPA string for text.
@@ -70,6 +72,7 @@ class Phonemizer:
             punctuation_separator: Separator string between before punctuation (keep_clause_breakers=True)
             keep_language_flags: True if language switching flags should be kept
             no_stress: True if stress characters should be removed
+            ssml: True if text may contain SSML tags
 
         Returns:
             ipa - string of IPA phonemes
@@ -104,13 +107,18 @@ class Phonemizer:
             self.lib_espeak.espeak_SetPhonemeTrace(phoneme_flags, phonemes_file)
 
             text_bytes = text.encode("utf-8")
+
+            synth_flags = Phonemizer.espeakCHARS_AUTO | Phonemizer.espeakPHONEMES
+            if ssml:
+                synth_flags |= Phonemizer.espeakSSML
+
             self.lib_espeak.espeak_Synth(
                 text_bytes,
                 0,  # buflength (unused in AUDIO_OUTPUT_SYNCHRONOUS mode)
                 0,  # position
                 0,  # position_type
                 0,  # end_position (no end position)
-                Phonemizer.espeakCHARS_AUTO | Phonemizer.espeakPHONEMES,
+                synth_flags,
                 None,  # unique_speaker,
                 None,  # user_data,
             )

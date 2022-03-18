@@ -51,3 +51,16 @@ class PhonemizerTestCase(unittest.TestCase):
         # With language flags
         phonemes = phonemizer.phonemize("library", keep_language_flags=True)
         self.assertEqual(phonemes, "(en)lˈaɪbɹəɹi(fr)")
+
+    def test_ssml(self):
+        """Test SSML"""
+        phonemizer = Phonemizer(default_voice="en-us")
+        phonemes = phonemizer.phonemize(
+            '<speak><s><say-as interpret-as="characters">12</say-as></s></speak>',
+            phoneme_separator="_",
+            ssml=True,
+        )
+
+        # "one two" instead of "twelve"
+        phoneme_list = list(filter(None, (p.strip() for p in phonemes.split("_"))))
+        self.assertEqual(phoneme_list, ["w", "ˌʌ", "n", "t", "ˈuː"])
