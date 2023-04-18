@@ -1,13 +1,21 @@
 """Uses ctypes and libespeak-ng to get IPA phonemes from text"""
 import ctypes
 import re
-import typing
+from enum import Enum
 from pathlib import Path
+from typing import Any, Collection, List, Optional
 
 _DIR = Path(__file__).parent
 __version__ = (_DIR / "VERSION").read_text().strip()
 
 # -----------------------------------------------------------------------------
+
+
+class StreamType(Enum):
+    """Type of stream used to record phonemes from eSpeak."""
+
+    MEMORY = "memory"
+    NONE = "none"
 
 
 class Phonemizer:
@@ -25,6 +33,7 @@ class Phonemizer:
     AUDIO_OUTPUT_SYNCHRONOUS = 0x02
     espeakPHONEMES_IPA = 0x02
     espeakCHARS_AUTO = 0
+    espeakSSML = 0x10
     espeakPHONEMES = 0x100
 
     LANG_SWITCH_FLAG = re.compile(r"\([^)]*\)")
@@ -35,25 +44,29 @@ class Phonemizer:
 
     def __init__(
         self,
-        default_voice: typing.Optional[str] = None,
-        clause_breakers: typing.Optional[typing.Collection[str]] = None,
+        default_voice: Optional[str] = None,
+        clause_breakers: Optional[Collection[str]] = None,
+        stream_type: StreamType = StreamType.MEMORY,
     ):
-        self.current_voice: typing.Optional[str] = None
+        self.current_voice: Optional[str] = None
         self.default_voice = default_voice
         self.clause_breakers = clause_breakers or Phonemizer.DEFAULT_CLAUSE_BREAKERS
 
-        self.lib_espeak: typing.Any = None
+        self.stream_type = stream_type
+        self.libc: Any = None
+        self.lib_espeak: Any = None
 
     def phonemize(
         self,
         text: str,
-        voice: typing.Optional[str] = None,
+        voice: Optional[str] = None,
         keep_clause_breakers: bool = False,
-        phoneme_separator: typing.Optional[str] = None,
+        phoneme_separator: Optional[str] = None,
         word_separator: str = " ",
         punctuation_separator: str = "",
         keep_language_flags: bool = False,
         no_stress: bool = False,
+        ssml: bool = False,
     ) -> str:
         """
         Return IPA string for text.
@@ -72,6 +85,9 @@ class Phonemizer:
         Returns:
             ipa - string of IPA phonemes
         """
+        if ssml and (self.stream_type == StreamType.NONE):
+            raise ValueError("Cannot use SSML without stream")
+
         self._maybe_init()
 
         voice = voice or self.default_voice
@@ -90,22 +106,12 @@ class Phonemizer:
         if phoneme_separator:
             phoneme_flags = phoneme_flags | (ord(phoneme_separator) << 8)
 
-        text_bytes = text.encode("utf-8")
-        text_pointer = ctypes.c_char_p(text_bytes)
-
-        text_flags = Phonemizer.espeakCHARS_AUTO
-
-        phoneme_lines = []
-        while text_pointer:
-            clause_phonemes = ctypes.c_char_p(
-                self.lib_espeak.espeak_TextToPhonemes(
-                    ctypes.pointer(text_pointer), text_flags, phoneme_flags,
-                )
-            )
-            if clause_phonemes.value is not None:
-                phoneme_lines.append(
-                    clause_phonemes.value.decode()  # pylint: disable=no-member
-                )
+        if self.stream_type == StreamType.MEMORY:
+            phoneme_lines = self._phonemize_mem_stream(text, phoneme_separator, ssml)
+        elif self.stream_type == StreamType.NONE:
+            phoneme_lines = self._phonemize_no_stream(text, phoneme_separator)
+        else:
+            raise ValueError("Unknown stream type")
 
         if not keep_language_flags:
             # Remove language switching flags, e.g. (en)
@@ -145,6 +151,71 @@ class Phonemizer:
 
         return phonemes_str
 
+    def _phonemize_mem_stream(
+        self, text: str, phoneme_separator: Optional[str], ssml: bool
+    ) -> List[str]:
+        # Create in-memory file for phoneme trace.
+        phonemes_buffer = ctypes.c_char_p()
+        phonemes_size = ctypes.c_size_t()
+        phonemes_file = self.libc.open_memstream(
+            ctypes.byref(phonemes_buffer), ctypes.byref(phonemes_size)
+        )
+
+        try:
+            phoneme_flags = Phonemizer.espeakPHONEMES_IPA
+            if phoneme_separator:
+                phoneme_flags = phoneme_flags | (ord(phoneme_separator) << 8)
+
+            self.lib_espeak.espeak_SetPhonemeTrace(phoneme_flags, phonemes_file)
+
+            text_bytes = text.encode("utf-8")
+
+            synth_flags = Phonemizer.espeakCHARS_AUTO | Phonemizer.espeakPHONEMES
+            if ssml:
+                synth_flags |= Phonemizer.espeakSSML
+
+            self.lib_espeak.espeak_Synth(
+                text_bytes,
+                0,  # buflength (unused in AUDIO_OUTPUT_SYNCHRONOUS mode)
+                0,  # position
+                0,  # position_type
+                0,  # end_position (no end position)
+                synth_flags,
+                None,  # unique_speaker,
+                None,  # user_data,
+            )
+            self.libc.fflush(phonemes_file)
+
+            return ctypes.string_at(phonemes_buffer).decode().splitlines()
+        finally:
+            self.libc.fclose(phonemes_file)
+
+    def _phonemize_no_stream(
+        self, text: str, phoneme_separator: Optional[str]
+    ) -> List[str]:
+        phoneme_flags = Phonemizer.espeakPHONEMES_IPA
+        if phoneme_separator:
+            phoneme_flags = phoneme_flags | (ord(phoneme_separator) << 8)
+
+        text_bytes = text.encode("utf-8")
+        text_pointer = ctypes.c_char_p(text_bytes)
+
+        text_flags = Phonemizer.espeakCHARS_AUTO
+
+        phoneme_lines = []
+        while text_pointer:
+            clause_phonemes = ctypes.c_char_p(
+                self.lib_espeak.espeak_TextToPhonemes(
+                    ctypes.pointer(text_pointer), text_flags, phoneme_flags,
+                )
+            )
+            if clause_phonemes.value is not None:
+                phoneme_lines.append(
+                    clause_phonemes.value.decode()  # pylint: disable=no-member
+                )
+
+        return phoneme_lines
+
     def _maybe_init(self):
         if self.lib_espeak:
             # Already initialized
@@ -160,3 +231,8 @@ class Phonemizer:
             Phonemizer.AUDIO_OUTPUT_SYNCHRONOUS, 0, None, 0
         )
         assert sample_rate > 0, "Failed to initialize libespeak-ng"
+
+        if self.stream_type == StreamType.MEMORY:
+            # Initialize libc for memory stream
+            self.libc = ctypes.cdll.LoadLibrary("libc.so.6")
+            self.libc.open_memstream.restype = ctypes.POINTER(ctypes.c_char)
