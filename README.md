@@ -1,6 +1,6 @@
 # eSpeak Phonemizer
 
-Uses [ctypes](https://docs.python.org/3/library/ctypes.html) and [libespeak-ng](https://github.com/espeak-ng/espeak-ng/blob/master/docs/integration.md) to transform text into [IPA](https://en.wikipedia.org/wiki/International_Phonetic_Alphabet) phonemes.
+Uses [ctypes](https://docs.python.org/3/library/ctypes.html) and a fork of [espeak-ng](https://github.com/rhasspy/espeak-ng) to transform text into [IPA](https://en.wikipedia.org/wiki/International_Phonetic_Alphabet) phonemes.
 
 ## Installation
 

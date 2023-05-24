@@ -20,9 +20,7 @@ fi
 
 export PYTHONPATH="${src_dir}"
 
-coverage run "--source=${src_dir}/espeak_phonemizer" -m pytest
-coverage report -m
-coverage xml
+python3 -m unittest tests/*.py
 
 # -----------------------------------------------------------------------------
 

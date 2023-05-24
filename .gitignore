@@ -10,3 +10,5 @@ __pycache__/
 .dockerignore
 .coverage
 coverage.xml
+
+/espeak_phonemizer/lib/
