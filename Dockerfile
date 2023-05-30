@@ -30,6 +30,7 @@ RUN cd espeak-ng && \
     make install
 
 RUN mkdir -p /output && find /usr -name 'libespeak-ng*.so*' -exec cp -a {} /output/ \;
+RUN find /usr -type d -name 'espeak-ng-data' -exec cp -R {} /output/ \;
 
 # -----------------------------------------------------------------------------
 

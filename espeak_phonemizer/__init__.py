@@ -1,10 +1,10 @@
 """Uses ctypes and libespeak-ng to get IPA phonemes from text"""
 import ctypes
 import logging
-import re
 import platform
+import re
 from pathlib import Path
-from typing import Any, Collection, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 _DIR = Path(__file__).parent
 __version__ = (_DIR / "VERSION").read_text().strip()

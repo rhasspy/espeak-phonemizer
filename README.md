@@ -4,18 +4,14 @@ Uses [ctypes](https://docs.python.org/3/library/ctypes.html) and a [fork of espe
 
 ## Requirements
 
-
+* Python 3.7 or higher
+* Linux
+* 64-bit architecture (`x86_64` or `aarch64`)
 
 
 ## Installation
 
-First, install libespeak-ng:
-
-```sh
-sudo apt-get install libespeak-ng1
-```
-
-Next, install espeak_phonemizer:
+Install with pip:
 
 ```sh
 pip install espeak_phonemizer
@@ -81,5 +77,24 @@ parallel -a /path/to/input.csv --pipepart \
 ```
 
 
-
 ## Building from Source
+
+Use Docker to build `libespeak-ng.so` for the supported platforms:
+
+``` sh
+make espeak
+```
+
+Then, copy the appropriate files into the source tree:
+
+``` sh
+cp dist/linux_amd64/amd64/libespeak-ng.so espeak_phonemizer/lib/x86_64/
+cp dist/linux_arm64/arm64/libespeak-ng.so espeak_phonemizer/lib/aarch64/
+```
+
+If necessary, also copy an `espeak-ng-data` directory to `espeak_phonemizer/lib/` (only needed if you change espeak versions):
+
+``` sh
+rm -rf  espeak_phonemizer/lib/espeak-ng-data/
+cp -R dist/linux_amd64/amd64/espeak-ng-data espeak_phonemizer/lib/
+```

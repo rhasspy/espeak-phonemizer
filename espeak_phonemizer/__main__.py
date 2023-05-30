@@ -106,11 +106,10 @@ def main():
 
         text_phonemes = phonemizer.phonemize(
             text,
-            keep_clause_breakers=args.keep_punctuation,
+            keep_punctuation=args.keep_punctuation,
             phoneme_separator=args.phoneme_separator,
             keep_language_flags=args.keep_language_flags,
             no_stress=args.no_stress,
-            punctuation_separator=args.phoneme_separator or "",
         )
 
         if args.word_separator:
