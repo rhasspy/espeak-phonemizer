@@ -1,6 +1,6 @@
 SHELL := bash
 
-.PHONY: check clean reformat dist test
+.PHONY: check clean reformat dist test espeak
 
 all: dist
 
@@ -17,4 +17,8 @@ test:
 	scripts/run-tests.sh
 
 dist:
-	python3 setup.py sdist
+	python3 setup.py bdist_wheel -p linux_x86_64
+	python3 setup.py bdist_wheel -p linux_aarch64
+
+espeak:
+	docker buildx build . --platform 'linux/amd64,linux/arm64' --output 'type=local,dest=dist'

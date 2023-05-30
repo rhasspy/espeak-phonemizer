@@ -37,16 +37,32 @@ class PhonemizerTestCase(unittest.TestCase):
     def test_keep_punctuation(self):
         """Test keeping punctuation characters"""
         phonemizer = Phonemizer(default_voice="en-us")
-        phonemes = phonemizer.phonemize("this, I.S. a; good: test! ok?")
-        self.assertEqual(phonemes, "ðˈɪs, ˌaɪˌɛsˈeɪ; ɡˈʊd: tˈɛst!\nˌoʊkˈeɪ?")
+        phonemes = phonemizer.phonemize("this, I.S. a; good: test! ok? ok.")
+        self.assertEqual(phonemes, "ðˈɪs, ˌaɪˌɛsˈeɪ; ɡˈʊd: tˈɛst!\nˌoʊkˈeɪ?\nˌoʊkˈeɪ.")
 
     def test_no_punctuation(self):
         """Test not keeping punctuation characters"""
         phonemizer = Phonemizer(default_voice="en-us")
         phonemes = phonemizer.phonemize(
-            "this, I.S. a; good: test! ok?", keep_punctuation=False
+            "this, I.S. a; good: test! ok? ok.", keep_punctuation=False
         )
-        self.assertEqual(phonemes, "ðˈɪs ˌaɪˌɛsˈeɪ ɡˈʊd tˈɛst\nˌoʊkˈeɪ")
+        self.assertEqual(phonemes, "ðˈɪs ˌaɪˌɛsˈeɪ ɡˈʊd tˈɛst\nˌoʊkˈeɪ\nˌoʊkˈeɪ")
+
+    def test_change_punctuation(self):
+        """Test using different punctuation characters"""
+        phonemizer = Phonemizer(default_voice="en-us")
+        phonemes = phonemizer.phonemize(
+            "this, I.S. a; good: test! ok? ok.",
+            punctuations={
+                Phonemizer.CLAUSE_COLON: "A",
+                Phonemizer.CLAUSE_COMMA: "B",
+                Phonemizer.CLAUSE_EXCLAMATION: "C",
+                Phonemizer.CLAUSE_PERIOD: "D",
+                Phonemizer.CLAUSE_QUESTION: "E",
+                Phonemizer.CLAUSE_SEMICOLON: "F",
+            },
+        )
+        self.assertEqual(phonemes, "ðˈɪsB ˌaɪˌɛsˈeɪF ɡˈʊdA tˈɛstC\nˌoʊkˈeɪE\nˌoʊkˈeɪD")
 
     def test_keep_language_flags(self):
         """Test keeping language-switching flags"""

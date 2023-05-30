@@ -1,0 +1,5 @@
+include requirements_dev.txt
+include LICENSE
+include README.md
+include espeak_phonemizer/VERSION
+recursive-include espeak_phonemizer/lib *

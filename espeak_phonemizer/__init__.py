@@ -1,11 +1,15 @@
 """Uses ctypes and libespeak-ng to get IPA phonemes from text"""
 import ctypes
+import logging
 import re
+import platform
 from pathlib import Path
-from typing import Any, Collection, List, Optional
+from typing import Any, Collection, Dict, List, Optional, Union
 
 _DIR = Path(__file__).parent
 __version__ = (_DIR / "VERSION").read_text().strip()
+
+_LOGGER = logging.getLogger(__name__)
 
 # -----------------------------------------------------------------------------
 
@@ -55,13 +59,30 @@ class Phonemizer:
 
     STRESS_PATTERN = re.compile(r"[ˈˌ]")
 
+    DEFAULT_PUNCTUATIONS = {
+        CLAUSE_COLON: ":",
+        CLAUSE_COMMA: ",",
+        CLAUSE_EXCLAMATION: "!",
+        CLAUSE_PERIOD: ".",
+        CLAUSE_QUESTION: "?",
+        CLAUSE_SEMICOLON: ";",
+    }
+
+    PUNCTUATION_MASK = 0x000FFFFF
+
     def __init__(
         self,
         default_voice: Optional[str] = None,
+        lib_espeak_path: Optional[Union[str, Path]] = None,
     ):
         self.current_voice: Optional[str] = None
         self.default_voice = default_voice
 
+        self.lib_espeak_path = (
+            Path(lib_espeak_path)
+            if lib_espeak_path
+            else (_DIR / "lib" / platform.machine() / "libespeak-ng.so")
+        )
         self.lib_espeak: Any = None
 
     def phonemize(
@@ -74,6 +95,7 @@ class Phonemizer:
         sentence_separator: str = "\n",
         keep_language_flags: bool = False,
         no_stress: bool = False,
+        punctuations: Optional[Dict[int, str]] = None,
     ) -> str:
         """
         Return IPA string for text.
@@ -88,11 +110,15 @@ class Phonemizer:
             sentence_separator: Separator string between sentences (default: newline)
             keep_language_flags: True if language switching flags should be kept
             no_stress: True if stress characters should be removed
+            punctuations: dict mapping CLAUSE_* constants to punctuation strings
 
         Returns:
             ipa - string of IPA phonemes
         """
         self._maybe_init()
+
+        if punctuations is None:
+            punctuations = Phonemizer.DEFAULT_PUNCTUATIONS
 
         voice = voice or self.default_voice
 
@@ -124,18 +150,9 @@ class Phonemizer:
 
             # Check for punctuation.
             if keep_punctuation:
-                if terminator.value == Phonemizer.CLAUSE_EXCLAMATION:
-                    phonemes_str += "!"
-                elif terminator.value == Phonemizer.CLAUSE_QUESTION:
-                    phonemes_str += "?"
-                elif terminator.value == Phonemizer.CLAUSE_COMMA:
-                    phonemes_str += ","
-                elif terminator.value == Phonemizer.CLAUSE_COLON:
-                    phonemes_str += ":"
-                elif terminator.value == Phonemizer.CLAUSE_SEMICOLON:
-                    phonemes_str += ";"
-                elif terminator.value == Phonemizer.CLAUSE_PERIOD:
-                    phonemes_str += "."
+                phonemes_str += punctuations.get(
+                    terminator.value & Phonemizer.PUNCTUATION_MASK, ""
+                )
 
             # Check for end of sentence
             if (
@@ -173,7 +190,8 @@ class Phonemizer:
             return
 
         # Use embedded libespeak-ng
-        self.lib_espeak = ctypes.cdll.LoadLibrary(_DIR / "lib" / "libespeak-ng.so")
+        _LOGGER.debug("Loading %s", self.lib_espeak_path)
+        self.lib_espeak = ctypes.cdll.LoadLibrary(self.lib_espeak_path)
 
         # Will fail if custom function is missing
         self.lib_espeak.espeak_TextToPhonemesWithTerminator.restype = ctypes.c_char_p

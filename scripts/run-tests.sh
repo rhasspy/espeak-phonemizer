@@ -21,7 +21,3 @@ fi
 export PYTHONPATH="${src_dir}"
 
 python3 -m unittest tests/*.py
-
-# -----------------------------------------------------------------------------
-
-echo "OK"

@@ -16,7 +16,7 @@ if readme_path.is_file():
     long_description = readme_path.read_text()
 
 version_path = module_dir / "VERSION"
-with open(version_path, "r") as version_file:
+with open(version_path, "r", encoding="utf-8") as version_file:
     version = version_file.read().strip()
 
 # -----------------------------------------------------------------------------
@@ -29,7 +29,10 @@ setuptools.setup(
     author_email="mike@rhasspy.org",
     url="https://github.com/rhasspy/espeak-phonemizer",
     packages=setuptools.find_packages(),
-    package_data={"espeak_phonemizer": ["VERSION", "py.typed"]},
+    package_data={
+        "espeak_phonemizer": ["VERSION", "py.typed"]
+        + [str(p) for p in (module_dir / "lib").rglob("*")]
+    },
     entry_points={
         "console_scripts": [
             "espeak-phonemizer = espeak_phonemizer.__main__:main",
@@ -39,6 +42,9 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "License :: OSI Approved :: MIT License",
     ],
     long_description=long_description,
