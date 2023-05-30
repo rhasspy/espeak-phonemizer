@@ -11,4 +11,5 @@ __pycache__/
 .coverage
 coverage.xml
 
+/.tox/
 /espeak_phonemizer/lib/

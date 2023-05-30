@@ -1,6 +1,11 @@
 # eSpeak Phonemizer
 
-Uses [ctypes](https://docs.python.org/3/library/ctypes.html) and a fork of [espeak-ng](https://github.com/rhasspy/espeak-ng) to transform text into [IPA](https://en.wikipedia.org/wiki/International_Phonetic_Alphabet) phonemes.
+Uses [ctypes](https://docs.python.org/3/library/ctypes.html) and a [fork of espeak-ng](https://github.com/rhasspy/espeak-ng) to transform text into [IPA](https://en.wikipedia.org/wiki/International_Phonetic_Alphabet) phonemes.
+
+## Requirements
+
+
+
 
 ## Installation
 
@@ -74,3 +79,7 @@ parallel -a /path/to/input.csv --pipepart \
     espeak-phonemizer -v en-us --csv \
     > /path/to/output.csv
 ```
+
+
+
+## Building from Source
