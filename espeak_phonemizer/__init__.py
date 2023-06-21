@@ -190,8 +190,9 @@ class Phonemizer:
         finally:
             self.libc.fclose(phonemes_file)
 
-    def _phonemize_no_stream(self, text: str, \
-        phoneme_separator: [Optional[str])](url) -> List[str]:
+    def _phonemize_no_stream(
+        self, text: str, phoneme_separator: Optional[str]
+    ) -> List[str]:
         phoneme_flags = Phonemizer.espeakPHONEMES_IPA
         if phoneme_separator:
             phoneme_flags = phoneme_flags | (ord(phoneme_separator) << 8)
@@ -203,11 +204,13 @@ class Phonemizer:
         fcn_ttp = self.lib_espeak.espeak_TextToPhonemes
         fcn_ttp.restype = ctypes.c_char_p
         while text_pointer:
-            clause_phonemes = fcn_ttp( \
-            ctypes.pointer(text_pointer), text_flags, \
-            phoneme_flags)
+            clause_phonemes = fcn_ttp(
+                ctypes.pointer(text_pointer), text_flags, phoneme_flags
+            )
             if isinstance(clause_phonemes, bytes):
-                clause_phonemes_str = clause_phonemes.decode()  # pylint: disable=no-member
+                clause_phonemes_str = (
+                    clause_phonemes.decode()
+                )  # pylint: disable=no-member
                 phoneme_lines.append(clause_phonemes_str)
 
         return phoneme_lines
