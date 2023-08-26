@@ -220,7 +220,11 @@ class Phonemizer:
             # Already initialized
             return
 
-        library_names = ["libespeak-ng.so", "libespeak-ng.so.1", "libespeak-ng.dylib"]
+        library_names = ["libespeak-ng.so", 
+                         "libespeak-ng.so.1", 
+                         "libespeak-ng.dylib",
+                         "/opt/local/lib/libespeak-ng.dylib" # required for Mac OS X when installed `espeak-ng` with MacPorts; As of macOS 10.11 (El Capitan), the DYLD_LIBRARY_PATH environment variable appears to be ignored
+                        ]
 
         for lib_name in library_names:
             try:
