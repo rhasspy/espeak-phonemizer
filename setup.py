@@ -29,7 +29,7 @@ setuptools.setup(
     author_email="mike@rhasspy.org",
     url="https://github.com/rhasspy/espeak-phonemizer",
     packages=setuptools.find_packages(),
-    package_data={"espeak_phonemizer": ["VERSION", "py.typed"]},
+    package_data={"espeak_phonemizer": ["VERSION", "py.typed", "*.pyi"]},
     entry_points={
         "console_scripts": [
             "espeak-phonemizer = espeak_phonemizer.__main__:main",
