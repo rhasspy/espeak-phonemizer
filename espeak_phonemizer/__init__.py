@@ -220,11 +220,21 @@ class Phonemizer:
             # Already initialized
             return
 
-        try:
-            self.lib_espeak = ctypes.cdll.LoadLibrary("libespeak-ng.so")
-        except OSError:
-            # Try .so.1
-            self.lib_espeak = ctypes.cdll.LoadLibrary("libespeak-ng.so.1")
+        library_names = ["libespeak-ng.so", 
+                         "libespeak-ng.so.1", 
+                         "libespeak-ng.dylib",
+                         "/opt/local/lib/libespeak-ng.dylib" # required for Mac OS X when installed `espeak-ng` with MacPorts; As of macOS 10.11 (El Capitan), the DYLD_LIBRARY_PATH environment variable appears to be ignored
+                        ]
+
+        for lib_name in library_names:
+            try:
+                self.lib_espeak = ctypes.cdll.LoadLibrary(lib_name)
+                break
+            except OSError:
+                continue
+        else:
+            raise OSError("Failed to load any of the specified libraries")
+
 
         sample_rate = self.lib_espeak.espeak_Initialize(
             Phonemizer.AUDIO_OUTPUT_SYNCHRONOUS, 0, None, 0
@@ -233,5 +243,10 @@ class Phonemizer:
 
         if self.stream_type == StreamType.MEMORY:
             # Initialize libc for memory stream
-            self.libc = ctypes.cdll.LoadLibrary("libc.so.6")
+            try:
+                self.libc = ctypes.cdll.LoadLibrary("libc.so.6")
+            except OSError:
+                # on Mac OS X, libc equiviliant is called libSystem
+                self.libc = ctypes.cdll.LoadLibrary("libc.dylib")
+                
             self.libc.open_memstream.restype = ctypes.POINTER(ctypes.c_char)
